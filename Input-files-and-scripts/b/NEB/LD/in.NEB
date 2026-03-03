@@ -1,0 +1,38 @@
+
+units             metal
+atom_style        atomic
+atom_modify       map array sort 0 0.0
+boundary          p p p 
+variable NoP equal 12
+variable n   uloop ${NoP} pad
+timestep 0.005 #0.001 0.01
+neighbor 2.0 bin
+neigh_modify delay 10 check yes
+###read initial file
+read_data dump.initial_50000 #235.lmp
+
+# ------------------------ Interatomic Potential ------------------------------
+pair_style      eam/alloy
+pair_coeff * * NiCoCr.lammps.eam Ni Co Cr 
+
+#pair_style      eam/alloy 
+#pair_coeff  * * NiCoCr_A_atom.eam.alloy X
+
+
+reset_timestep 0
+#------------------------------------------------------------
+# Dump simulation results
+thermo 100
+thermo_style  custom step temp  press pxx pyy pzz pxy pyz pxz etotal pe ke
+
+dump 1 all cfg 10000 dump.neb_50000_*_$n.cfg mass type xs ys zs
+
+
+
+minimize 0 1.0e-2 10000 10000
+min_style quickmin  #fire #quickmin
+fix       1      all neb 1.0 parallel neigh perp 1.0  end last/efirst/middle 1.0
+#fix neb
+neb        0.0 1.0e-2 1000000 1000000 1000 final dump.final_50000 # 100000  20000
+
+
